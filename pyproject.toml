@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inferq"
+version = "0.1.0"
+description = "Queue-based ML inference service with dynamic batching, retries and metrics"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Halil Kuzu" }]
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "httpx>=0.27",
+    "redis>=5.0",
+    "pydantic>=2.5",
+    "prometheus-client>=0.20",
+]
+
+[project.optional-dependencies]
+sklearn = ["scikit-learn>=1.3", "joblib>=1.3"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5", "scikit-learn>=1.3", "joblib>=1.3"]
+
+[project.scripts]
+inferq = "inferq.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

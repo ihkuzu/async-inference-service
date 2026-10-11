@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: sudo apt-get update && sudo apt-get install -y redis-server
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build
+      - name: Smoke test
+        run: |
+          docker compose up -d
+          for i in $(seq 1 30); do curl -sf localhost:8000/health && break || sleep 1; done
+          id=$(curl -sf -X POST localhost:8000/v1/jobs -H 'content-type: application/json' -d '{"text":"hello world"}' | python -c 'import sys,json;print(json.load(sys.stdin)["id"])')
+          for i in $(seq 1 30); do
+            s=$(curl -sf localhost:8000/v1/jobs/$id | python -c 'import sys,json;print(json.load(sys.stdin)["status"])')
+            [ "$s" = "done" ] && exit 0; sleep 1
+          done
+          docker compose logs; exit 1

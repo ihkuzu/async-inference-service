@@ -1,0 +1,36 @@
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 10
+
+  api:
+    build: .
+    command: ["inferq", "api"]
+    environment: &env
+      INFERQ_BACKEND: redis
+      INFERQ_REDIS_URL: redis://redis:6379/0
+      INFERQ_PREDICTOR: simulated
+      INFERQ_MAX_BATCH: "16"
+      INFERQ_MAX_WAIT_MS: "20"
+    ports: ["8000:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  worker:
+    build: .
+    command: ["inferq", "worker"]
+    environment:
+      <<: *env
+      INFERQ_WORKER_ID: worker-1
+    ports: ["9100:9100"]
+    stop_grace_period: 20s
+    depends_on:
+      redis: { condition: service_healthy }
+
+volumes:
+  redis-data:
