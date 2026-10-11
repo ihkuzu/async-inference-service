@@ -89,6 +89,7 @@ Things to keep in mind when reading this:
 - The model is simulated. The container has no GPU and cannot download model weights. The batching curve depends on how much of your real model's cost is fixed per call, so measure your own model before copying settings.
 - The benchmark client polls job status every 5 ms, which adds a few milliseconds to every latency and limits the burst numbers. Treat them as relative, not absolute.
 - One worker, one machine, no network between the services.
+- The in-memory backend on the same 600 jobs reaches 46, 276 and 583 jobs/s at batch sizes 1, 8 and 32, so at larger batches the Redis round trips (about five per job) cost real throughput. Pipelining them is the obvious next step.
 
 Reproduce with `inferq bench --backend redis --redis-url redis://localhost:6379/15 --jobs 600` (add `--rate 150` for the steady case).
 
